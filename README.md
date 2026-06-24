@@ -1,136 +1,146 @@
-# reqres-api-tests
+# Klik Indomaret Automation
 
-E2E API test suite for the [reqres.in](https://reqres.in) Users module, built with **Mocha + Chai + TypeScript**.
+Android UI automation for the Klik Indomaret app — Virtual Account payment flow.
 
-## Tech Stack
-
-| Tool | Purpose |
-|---|---|
-| [Mocha](https://mochajs.org/) | Test runner |
-| [Chai](https://www.chaijs.com/) | Assertion library |
-| [Supertest](https://github.com/ladjs/supertest) | HTTP request builder |
-| [TypeScript](https://www.typescriptlang.org/) | Language |
-| [Faker.js](https://fakerjs.dev/) | Test data generation |
-| [Mochawesome](https://github.com/adamgruber/mochawesome) | HTML test reporter |
+**Stack:** TypeScript · WebdriverIO 9 · Appium 2 · Cucumber · Bun
 
 ---
 
-## Project Structure
+## 1. ADB Wireless Connection (Real Device)
+
+> Required for every machine that runs the tests. USB is not needed once pairing is done.
+
+### Enable on the device
+
+1. Go to **Settings → Developer Options**
+2. Enable **Wireless debugging**
+3. Tap **Pair device with pairing code** — note the **IP address**, **port**, and **pairing code**
+
+### Pair and connect from your machine
+
+```bash
+# Pair once (use the pairing port shown on the device, not the connection port)
+adb pair <device-ip>:<pairing-port>
+# Enter the pairing code when prompted
+
+# Connect (use the connection port shown under "Wireless debugging")
+adb connect <device-ip>:<connection-port>
+
+# Verify
+adb devices -l
+```
+
+### Get the UDID for .env
+
+The UDID is the full string shown by `adb devices -l`, e.g.:
 
 ```
-api/
-├── test/
-│   ├── endpoint/
-│   │   └── users.ts            # Supertest request builders per endpoint
-│   ├── service/
-│   │   └── users.ts            # Test suites (e2e flow + positive + negative cases)
-│   └── support/
-│       ├── data/
-│       │   ├── payload/        # Request body factories
-│       │   ├── scenario/       # Data-driven test case definitions
-│       │   └── test/           # Fixed test constants (known IDs, user data)
-│       └── schema-validator/   # JSON response shape definitions
-├── test/utils/
-│   ├── expected-response.ts    # Reusable Chai assertion helpers
-│   └── setup.ts                # dotenv loader (runs before all tests)
-├── .env.example                # Environment variable template
-├── .mocharc.json               # Mocha configuration
-├── tsconfig.json               # TypeScript configuration
-└── package.json
+List of devices attached
+adb-XXXXXXXXXXXX-XXXXXX._adb-tls-connect._tcp   device
 ```
+
+Copy the entire identifier (including `adb-` prefix) into `DEVICE_UDID` in your `.env`:
+
+```env
+DEVICE_UDID=adb-XXXXXXXXXXXX-XXXXXX._adb-tls-connect._tcp
+```
+
+### Things to keep in mind
+
+- **Stay on the same Wi-Fi network** as your machine — the connection drops if you switch networks.
+- **Keep Developer Options → Wireless debugging ON** — it resets on some devices after reboot.
+- If `adb devices` shows `unauthorized`, re-pair from scratch.
+- `noReset: true` is set in capabilities — the app session is preserved between runs, so you don't need to log in again on every run as long as the session is alive.
 
 ---
 
-## Prerequisites
+## 2. Contributing
 
-- **Node.js** v18 or later
-- **npm** v8 or later
-- A **reqres.in API key** (free — see step 1 below)
+### Prerequisites
 
----
+- [Bun](https://bun.sh) installed
+- [Appium 2](https://appium.io) installed globally (`npm install -g appium`)
+- UiAutomator2 driver: `appium driver install uiautomator2`
+- Android SDK / ADB available in your `PATH`
+- A real Android device connected via ADB over Wi-Fi (see section 1)
 
-## Setup
-
-### 1. Get a reqres.in API Key
-
-1. Go to [https://reqres.in](https://reqres.in) and sign up for a free account.
-2. Copy your API key from the dashboard.
-
-### 2. Clone the repository
+### Setup
 
 ```bash
-git clone https://github.com/yhmahendra/edts-api.git
-cd edts-api
-```
+# Clone the repository
+git clone https://github.com/yhmahendra/edts-android.git
+cd edts-android
 
-### 3. Install dependencies
+# Install dependencies
+bun install
 
-```bash
-npm install
-```
-
-### 4. Configure environment variables
-
-```bash
+# Copy and fill in your environment
 cp .env.example .env
 ```
 
-Open `.env` and fill in your API key:
+Fill in `.env` — every key is required:
 
-```env
-REQRES_API_KEY=your_api_key_here
-```
+| Key | How to get the value |
+|---|---|
+| `DEVICE_UDID` | `adb devices -l` |
+| `DEVICE_NAME` | Device model name (e.g. `V2352`) |
+| `ANDROID_VERSION` | `adb shell getprop ro.build.version.release` |
+| `APP_PACKAGE` | `adb shell pm list packages \| grep indomaret` |
+| `APPIUM_HOST` | `localhost` unless running Appium remotely |
+| `APPIUM_PORT` | `4723` (Appium default) |
+| `USER_PHONE` | Test account phone number |
+| `USER_PASSWORD` | Test account password |
+| `SEARCH_KEYWORD` | Product to search for (e.g. `Indomie Goreng`) |
 
----
-
-## Running Tests
-
-### Run all tests
-
-```bash
-npm test
-```
-
-### Run only the users module
+### Start Appium
 
 ```bash
-npm run test:users
+appium
 ```
 
-After each run, an HTML report is generated at:
-
-```
-reports/report.html
-```
-
-Open it in a browser:
+### Run the tests
 
 ```bash
-open reports/report.html
+# Run all tests
+bun test
+
+# Run only @Smoke tagged scenarios
+bun smoke
+
+# Type-check without running
+bun run type-check
 ```
 
-For report captures, check the `~/assets/` directory.
+### Generate Allure report
 
----
+```bash
+bun report
+```
 
-## Test Coverage
+### Project structure
 
-The suite covers all 5 steps of the e2e flow, each with positive and negative scenarios:
+```
+config/         Appium capabilities and WDIO config
+test/
+  features/     Cucumber .feature files
+  steps/        Step definitions
+  pages/        Page Object Model — one file per screen
+  support/      Base actions, price calculator, shared data
+```
 
-| Step | Method | Endpoint | Cases |
-|---|---|---|---|
-| 1 | POST | `/api/users` | Create user — valid payload, empty fields, empty body |
-| 2 | GET | `/api/users?page=2` | List users — page with data, page without data, field validation |
-| 3 | PUT | `/api/users/2` | Update user — field reflection, timestamp, non-existent id |
-| 4 | GET | `/api/users/2` | Single user — known data, 404 for missing user, empty body |
-| 5 | DELETE | `/api/users/2` | Delete user — 204 response, no body, idempotent on non-existent |
+### Adding a new test
 
----
+1. Add a `.feature` file under `test/features/`
+2. Add step definitions under `test/steps/`
+3. Add or extend a page object under `test/pages/` — extend `BasePage` and use `this.actions` for all interactions
+4. Run `bun run type-check` before pushing
 
-## Adding New Tests
+### Locating elements
 
-- **New endpoint** → add a function in `test/endpoint/users.ts`
-- **New assertion** → add a helper in `test/utils/expected-response.ts`
-- **New test data** → add constants in `test/support/data/test/users.ts`
-- **New scenarios** → add an array entry in `test/support/data/scenario/users.ts`
-- **New test case** → add an `it()` block in `test/service/users.ts`
+Resource IDs in this app are obfuscated (e.g. `rid=ce7`). To find elements:
+
+```bash
+adb shell uiautomator dump /sdcard/dump.xml
+adb pull /sdcard/dump.xml .
+# Open dump.xml and search for the text or resource-id of the element
+```

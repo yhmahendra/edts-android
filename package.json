@@ -1,0 +1,26 @@
+{
+  "name": "klik-indomaret-automation",
+  "version": "1.0.0",
+  "description": "Android automation tests for Klik Indomaret - Payment Virtual Account flow",
+  "type": "module",
+  "author": "mahendraprimandayh@gmail.com",
+  "scripts": {
+    "test": "bun wdio run config/wdio.conf.local.ts",
+    "smoke": "bun wdio run config/wdio.conf.local.ts --cucumberOpts.tags='@Smoke'",
+    "feature": "bun wdio run config/wdio.conf.local.ts --suite",
+    "report": "allure generate --clean reports/allure-results && allure open",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@wdio/allure-reporter": "^9.20.0",
+    "@wdio/cli": "^9.20.0",
+    "@wdio/cucumber-framework": "^9.20.0",
+    "@wdio/local-runner": "^9.20.0",
+    "@wdio/spec-reporter": "^9.20.0",
+    "@wdio/types": "^9.20.0",
+    "expect-webdriverio": "^5.0.0",
+    "typescript": "^5.0.0",
+    "webdriverio": "^9.20.0"
+  }
+}

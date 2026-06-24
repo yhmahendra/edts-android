@@ -1,0 +1,4 @@
+Product price : Rp5.900
+Shipping fee  : 
+Insurance fee : Rp0
+Total shown   : Rp 10.900
